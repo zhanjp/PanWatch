@@ -6,6 +6,9 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
+# 使用国内 npm 镜像源加速
+RUN npm config set registry https://registry.npmmirror.com
+
 # 安装 pnpm
 RUN npm install -g pnpm
 
@@ -58,11 +61,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 复制依赖文件
 COPY requirements.txt ./
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 安装 Python 依赖（使用国内镜像源加速）
+RUN pip install --upgrade pip && \
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip install --no-cache-dir --default-timeout=1200 -r requirements.txt
 
-# 注意: Playwright 浏览器将在首次启动时自动安装到 data 目录
-# 这样可以减小镜像体积，并支持跨版本持久化
+# 预安装 Playwright Chromium 到 data 目录
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/data/playwright
+RUN mkdir -p /app/data/playwright && playwright install chromium
+
+# 时区设置，与宿主机同步
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 复制后端代码
 COPY src/ ./src/
