@@ -66,7 +66,9 @@ RUN pip install --upgrade pip && \
     pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install --no-cache-dir --default-timeout=1200 -r requirements.txt
 
-# 预安装 Playwright Chromium 到 data 目录
+# 注意: Playwright 浏览器将在首次启动时自动安装到 data 目录
+# 这样可以减小镜像体积，并支持跨版本持久化
+# 避免构建时网络超时问题
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/data/playwright
 RUN mkdir -p /app/data/playwright && playwright install chromium
 
